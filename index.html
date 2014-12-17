@@ -16,8 +16,10 @@
 </div>
 <script>
 $.urlParam = function(name){
+  try{
     var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
     return results[1] || 0;
+  }catch(e){}
 }
 
 var NB_TWEETS=5;

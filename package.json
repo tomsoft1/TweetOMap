@@ -1,9 +1,17 @@
 {
-"name": "TweetMap"
-,"version": "1.0.0"
-,"dependencies": { 
-  "express" : ">=2.1.0", 
-  "twit":">=1.1",
-  "socket.io":">=1.0" }
-,"private": true
+  "name": "TweetMap",
+  "version": "1.0.0-1",
+  "dependencies": {
+    "express": ">=2.1.0",
+    "twit": ">=1.1",
+    "socket.io": ">=1.0"
+  },
+  "private": true,
+  "subdomain": "TwittMap",
+  "scripts": {
+    "start": "tweet.js"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
 }
