@@ -15,6 +15,8 @@ app.use(express.static(__dirname + '/public'));
 
 var world = [ '-180', '-90', '180', '90' ]
 var currentBounds=world;
+var total=0;
+var totalSent=0;
 
 var T = new Twit({
   consumer_key:         'OyBoq9N9n2AmCqkVLQ8PpKor8',
@@ -23,50 +25,60 @@ var T = new Twit({
   access_token_secret:  '0EBgwNQTYGLOVteqzkl0RPiVflpNPfhSKgBBNPAgfG3JE'
 });
 
-//if(stream)stream.close();
-console.log("Starting twitter with:"+world);
 var stream = T.stream('statuses/filter', { locations: world});
 stream.on('error',function(error){
   console.log(error);
 });
 stream.on('limit', function (limitMessage) {
-  console.log("Limit:"+limitMessage);
+  console.log("Limit:"+JSON.stringify(limitMessage));
 });
 stream.on('tweet', function (tweet) {
-  var mediaUrl;
   if(tweet.geo){
+    total+=1;
     var coords=tweet.geo.coordinates;
-    if((coords[1]>currentBounds[0])&&(coords[0]>currentBounds[1])&&(coords[1]<currentBounds[2])&&(coords[0]<currentBounds[3])){
-      console.log(coords+" "+currentBounds);
-      console.log("...in");
-      // console.log(tweet);
-      //console.log(io);
-      //console.log(JSON.stringify(tweet.geo)+" "+tweet.text);
-      var smallTweet={
-           text:tweet.text,
-           user:{screen_name:tweet.user.screen_name,profile_image_url:tweet.user.profile_image_url,id_str:tweet.user.id_str},
-           geo:tweet.geo
-      };
-      io.sockets.emit('stream',smallTweet);
-    }
+    clients.forEach(function(socket){
+      var currentBounds=bounds_for_socket[socket.id];
+
+      if(currentBounds&&(coords[1]>currentBounds[0])&&(coords[0]>currentBounds[1])&&(coords[1]<currentBounds[2])&&(coords[0]<currentBounds[3])){
+        //console.log(coords+" "+currentBounds);
+        //console.log("...in");
+        totalSent+=1;
+        if(totalSent%100==0)console.log("Sent:"+totalSent);
+        var smallTweet={
+          text:tweet.text,
+          user:{screen_name:tweet.user.screen_name,profile_image_url:tweet.user.profile_image_url,id_str:tweet.user.id_str},
+          geo:tweet.geo
+        };
+       // console.log(smallTweet);
+        socket.emit('stream',smallTweet);
+      }
+    });
   }
-});
+  });
 
 var bounds_for_socket={};
-
+var clients=[];
 io.sockets.on('connection', function (socket) {
   socket.on('recenter',function(msg){
     console.log("recenter:"+msg);
-    currentBounds=JSON.parse("["+msg+"]");
+    bounds_for_socket[this.id]=JSON.parse("["+msg+"]");
+    console.log(bounds_for_socket);
   });
   socket.on('disconnect',function(socket){
-    console.log("disconnect");
-    console.log(io.sockets);
+    console.log("DISCONNET:"+this.id);
+    //  Here we try to get the correct element in the client list
+    for(var i=0;i<clients.length;i++){
+      client=clients[i];
+      if(client.client.id==this.id){clients.splice(i,1)}
+    }
+    delete bounds_for_socket[this.id];
+
+    console.log("disconnect , there is still:"+clients.length+" connected ("+Object.keys(bounds_for_socket).length+')');
   });
-  console.log('Connected');
-  console.log(socket.id);
+  console.log("NEW ID:"+socket.id);
+  clients.push(socket); // Update the list of connected clients
   currentBounds=JSON.parse(socket.handshake.query.bounds);
   bounds_for_socket[socket.id]=currentBounds;
-    console.log(bounds_for_socket);
+  console.log('Connected, total:'+clients.length+' ('+Object.keys(bounds_for_socket).length+')');
 });
 ;

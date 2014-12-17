@@ -15,14 +15,16 @@
 </div>
 </div>
 <script>
-var tweets=[];
-var socket=0;
+$.urlParam = function(name){
+    var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
+    return results[1] || 0;
+}
 
+var NB_TWEETS=5;
+var hover_bubble=[];
+var showTweets=true;
+var socket=null;
 window.onload = function() {
-  testData = {
-    max: 100,
-    data: []
-  };
 
   var baseLayer = L.tileLayer(
   'http://korona.geog.uni-heidelberg.de:8008/tms_rg.ashx?z={z}&x={x}&y={y}',{
@@ -32,14 +34,9 @@ window.onload = function() {
   );
 
   var cfg = {
-    // radius should be small ONLY if scaleRadius is true (or small radius is intended)
     "radius": 5,
     "maxOpacity": .8,
-    // scales the radius based on map zoom
     "scaleRadius": false,
-    // if set to false the heatmap uses the global maximum for colorization
-    // if activated: uses the data maximum within the current map boundaries
-    //   (there will always be a red spot with useLocalExtremas true)
     "useLocalExtrema": true,
     // which field name in your data represents the latitude - default "lat"
     latField: 'lat',
@@ -58,7 +55,10 @@ window.onload = function() {
   });
   map.on('zoomend',updateSocket);
   map.on('dragend',updateSocket);
-
+  if(bounds=$.urlParam('bounds')){
+    rect=JSON.parse(bounds);
+    map.fitBounds(L.latLngBounds([rect[1],rect[0]],[rect[3],rect[2]]));
+  }
   MyControl = L.Control.extend({
     options: {
       position: 'topleft'
@@ -68,17 +68,19 @@ window.onload = function() {
       // create the control container with a particular class name
       var container = L.DomUtil.create('div', 'my-custom-control');
       controlUI = L.DomUtil.create('button', 'toggle-tweet', container);
-      controlUI.click(function(){console.log("clicked!");});
       return container;
     }
   });
 
+
   map.addControl(new MyControl());
-  heatmapLayer.setData(testData);
-  //        heatmapLayer.setDataMax(10000);
-  //        heatmapLayer.setDataMin(1000);
-  //  marker = L.marker([0,0]).addTo(map);
-  hover_bubble = new L.Popup({ offset: new L.Point(0,-10), closeButton: false, autoPan: false })
+  var myBut=$(".toggle-tweet")
+  myBut.text("Hide");
+  myBut.click(toggleTweets);
+
+  for(var i=0;i<NB_TWEETS;i++){
+    hover_bubble.push(new L.Popup({ offset: new L.Point(0,-10), closeButton: false, autoPan: false }));
+  }
   startSocket();
 };
 function addPoint(tweet)
@@ -87,31 +89,37 @@ function addPoint(tweet)
     pt={lng:tweet.geo.coordinates[1],lat:tweet.geo.coordinates[0],count:1};
 
     //marker.setLatLng(tweet.geo.coordinates);
-    hover_bubble.setContent("<img src="+tweet.user.profile_image_url+" align=left><b>@"+tweet.user.screen_name+"</b><br>"+tweet.text)
-    .setLatLng(tweet.geo.coordinates)
-    .openOn(map);
+    //console.log(pt);
+    if(showTweets){
+      bubble=hover_bubble.shift();
+      bubble.setContent("<img src="+tweet.user.profile_image_url+" align=left><b>@"+tweet.user.screen_name+"</b><br>"+tweet.text)
+      .setLatLng(tweet.geo.coordinates)
+      .addTo(map);
+      hover_bubble.push(bubble);
 
-    console.log(pt);
-    tweets.push(pt);
-    if(tweets.length>0){
-      console.log("Adding");
-      heatmapLayer.addData(tweets);
-      tweets=[];
-      console.log("Done");
     }
+    heatmapLayer.addData(pt);
   }
 }
 
-function onClick()
-{}
+function toggleTweets()
+{
+  showTweets=!showTweets;
+  console.log(showTweets);
+}
+
 function updateSocket(){
-  socket.emit("recenter",map.getBounds().toBBoxString());
+  window.history.pushState("TweetOMap","TweetOMap","/?bounds=["+map.getBounds().toBBoxString()+"]");
+  if(socket)socket.emit("recenter",map.getBounds().toBBoxString());
 }
 function startSocket(){
-  console.log("Starting with:"+map.getBounds().toBBoxString());
   socket = io.connect('/', {query: "bounds=["+map.getBounds().toBBoxString()+"]"});
   socket.on('stream', function(tweet){
     addPoint(tweet);
+  });
+  socket.on('reconnect',function(){
+    console.log("Reconnect");
+    updateSocket();
   });
 }
 
