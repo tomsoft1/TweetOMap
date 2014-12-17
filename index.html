@@ -1,0 +1,120 @@
+<html>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+<script src="heatmap.min.js"></script>
+<script src="leaflet-heatmap.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<style>
+#map-canvas { height: 700px; }
+</style>
+<body>
+
+<div class="demo-wrapper">
+<div class="heatmap" id="map-canvas">
+</div>
+</div>
+<script>
+var tweets=[];
+var socket=0;
+
+window.onload = function() {
+  testData = {
+    max: 100,
+    data: []
+  };
+
+  var baseLayer = L.tileLayer(
+  'http://korona.geog.uni-heidelberg.de:8008/tms_rg.ashx?z={z}&x={x}&y={y}',{
+    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+    maxZoom: 18
+  }
+  );
+
+  var cfg = {
+    // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+    "radius": 5,
+    "maxOpacity": .8,
+    // scales the radius based on map zoom
+    "scaleRadius": false,
+    // if set to false the heatmap uses the global maximum for colorization
+    // if activated: uses the data maximum within the current map boundaries
+    //   (there will always be a red spot with useLocalExtremas true)
+    "useLocalExtrema": true,
+    // which field name in your data represents the latitude - default "lat"
+    latField: 'lat',
+    // which field name in your data represents the longitude - default "lng"
+    lngField: 'lng',
+    // which field name in your data represents the data value - default "value"
+    valueField: 'count'
+  };
+
+  heatmapLayer = new HeatmapOverlay(cfg);
+  map = new L.Map('map-canvas', {
+    center: new L.LatLng(46.99,2.58),
+    zoom: 7,
+    minZoom:5,
+    layers: [baseLayer, heatmapLayer]
+  });
+  map.on('zoomend',updateSocket);
+  map.on('dragend',updateSocket);
+
+  MyControl = L.Control.extend({
+    options: {
+      position: 'topleft'
+    },
+
+    onAdd: function (map) {
+      // create the control container with a particular class name
+      var container = L.DomUtil.create('div', 'my-custom-control');
+      controlUI = L.DomUtil.create('button', 'toggle-tweet', container);
+      controlUI.click(function(){console.log("clicked!");});
+      return container;
+    }
+  });
+
+  map.addControl(new MyControl());
+  heatmapLayer.setData(testData);
+  //        heatmapLayer.setDataMax(10000);
+  //        heatmapLayer.setDataMin(1000);
+  //  marker = L.marker([0,0]).addTo(map);
+  hover_bubble = new L.Popup({ offset: new L.Point(0,-10), closeButton: false, autoPan: false })
+  startSocket();
+};
+function addPoint(tweet)
+{
+  if(tweet.geo){
+    pt={lng:tweet.geo.coordinates[1],lat:tweet.geo.coordinates[0],count:1};
+
+    //marker.setLatLng(tweet.geo.coordinates);
+    hover_bubble.setContent("<img src="+tweet.user.profile_image_url+" align=left><b>@"+tweet.user.screen_name+"</b><br>"+tweet.text)
+    .setLatLng(tweet.geo.coordinates)
+    .openOn(map);
+
+    console.log(pt);
+    tweets.push(pt);
+    if(tweets.length>0){
+      console.log("Adding");
+      heatmapLayer.addData(tweets);
+      tweets=[];
+      console.log("Done");
+    }
+  }
+}
+
+function onClick()
+{}
+function updateSocket(){
+  socket.emit("recenter",map.getBounds().toBBoxString());
+}
+function startSocket(){
+  console.log("Starting with:"+map.getBounds().toBBoxString());
+  socket = io.connect('/', {query: "bounds=["+map.getBounds().toBBoxString()+"]"});
+  socket.on('stream', function(tweet){
+    addPoint(tweet);
+  });
+}
+
+</script>
+</body>
+</html>
