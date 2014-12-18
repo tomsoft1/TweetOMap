@@ -1,6 +1,6 @@
 {
   "name": "TweetMap",
-  "version": "1.0.0-3",
+  "version": "1.0.0-4",
   "dependencies": {
     "express": ">=2.1.0",
     "twit": ">=1.1",
