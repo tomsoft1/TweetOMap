@@ -14,6 +14,7 @@ server.listen(8080);
 
 // routing
 app.get('/', function (req, res) {
+  console.log(req);
   res.sendfile(__dirname + '/index.html');
 });
 app.use(express.static(__dirname + '/public'));
