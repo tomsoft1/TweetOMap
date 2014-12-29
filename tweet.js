@@ -1,4 +1,4 @@
-// @ThomasLandspurg 2014
+// @ThomasLandspurg Thomas.Landspurg@gmail.com 2014
 // Node.js client to search all tweet within a geographical zone and forwared them
 // in real time using a socket
 // http://blog.landspurg.net
