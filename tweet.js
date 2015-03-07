@@ -1,3 +1,4 @@
+//
 // @ThomasLandspurg Thomas.Landspurg@gmail.com 2014
 // Node.js client to search all tweet within a geographical zone and forwared them
 // in real time using a socket
@@ -15,7 +16,7 @@ server.listen(8080);
 // routing
 app.get('/', function (req, res) {
   console.log(req.headers);
-  res.sendfile(__dirname + '/index.html');
+  res.sendFile(__dirname + '/index.html');
 });
 app.use(express.static(__dirname + '/public'));
 
