@@ -9,7 +9,7 @@
   "private": true,
   "subdomain": "TwittMap",
   "scripts": {
-    "start": "tweet.js"
+    "start": "node tweet.js"
   },
   "engines": {
     "node": "0.10.x"
