@@ -1,5 +1,5 @@
 //
-// @ThomasLandspurg Thomas.Landspurg@gmail.com 2014
+// @ThomasLandspurg Thomas.Landspurg@gmail.com 2014-2019
 // Node.js client to search all tweet within a geographical zone and forwared them
 // in real time using a socket
 // http://blog.landspurg.net
@@ -41,6 +41,7 @@ stream.on('limit', function (limitMessage) {
 });
 stream.on('tweet', function (tweet) {
   if(tweet.geo){
+    console.log(tweet);
     total+=1;
     var coords=tweet.geo.coordinates;
     clients.forEach(function(socket){
