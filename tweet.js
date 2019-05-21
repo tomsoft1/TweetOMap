@@ -4,7 +4,7 @@
 // in real time using a socket
 // http://blog.landspurg.net
 //
-require('dotenv').config();
+//require('dotenv').config();
 var express = require('express'),
 app = express(),
 http = require('http'),
