@@ -4,7 +4,7 @@
 // in real time using a socket
 // http://blog.landspurg.net
 //
-//require('dotenv').config();
+require('dotenv').config();
 var express = require('express'),
 app = express(),
 http = require('http'),
@@ -12,7 +12,7 @@ server = http.createServer(app),
 Twit = require('twit'),
 io = require('socket.io').listen(server);
 
-server.listen(8080);
+server.listen( process.env.PORT||8080);
 
 // routing
 app.get('/', function (req, res) {
