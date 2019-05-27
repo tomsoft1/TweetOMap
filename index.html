@@ -68,7 +68,6 @@ window.onload = function() {
   map = new L.Map('map-canvas', {
     center: new L.LatLng(46.99,2.58),
     zoom:   7,
-    minZoom:5,
     layers: [baseLayer, heatmapLayer]
   });
   map.on('zoomend',updateSocket);
